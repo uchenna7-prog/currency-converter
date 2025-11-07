@@ -1,40 +1,44 @@
+from flask import Flask, request, jsonify
+from flask_mail import Mail, Message
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)  # allows your frontend on Vercel to talk to this backend
+
+# 🔧 Configure your email settings
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your_email@gmail.com'  # replace this
+app.config['MAIL_PASSWORD'] = 'your_app_password'      # replace this
+app.config['MAIL_DEFAULT_SENDER'] = 'your_email@gmail.com'
+
+mail = Mail(app)
+
+# 📩 Route to handle contact form submission
+@app.route('/contact', methods=['POST'])
+def contact():
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    message = data.get('message')
+
+    # compose the email
+    msg = Message(subject=f"New Contact from {name}",
+                  recipients=['your_email@gmail.com'],  # where you'll receive it
+                  body=f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}")
+
+    try:
+        mail.send(msg)
+        return jsonify({"success": True, "message": "Email sent successfully!"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
-<script>
-  const form = document.getElementById('contactForm');
-  const responseMsg = document.getElementById('responseMessage');
+@app.route('/')
+def home():
+    return "Backend is running!"
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
 
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const message = document.getElementById('message').value;
-
-    try {
-      const res = await fetch('https://your-backend-url.onrender.com/contact', { // replace with your Render backend URL later
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name, email, message })
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        responseMsg.textContent = "✅ Message sent successfully!";
-        responseMsg.style.color = "green";
-        form.reset();
-      } else {
-        responseMsg.textContent = "❌ Failed to send message. Try again.";
-        responseMsg.style.color = "red";
-      }
-
-    } catch (error) {
-      responseMsg.textContent = "⚠️ Error connecting to server.";
-      responseMsg.style.color = "orange";
-      console.error(error);
-    }
-  });
-</script>
+if __name__ == '__main__':
+    app.run(debug=True)
